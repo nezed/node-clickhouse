@@ -141,6 +141,25 @@ describe ("insert data", function () {
 		stream.end ();
 	});
 
+	it ("inserts csv with FORMAT clauses", function (done) {
+		var ch = new ClickHouse ({host: host, port: port});
+		var stream = ch.query ("INSERT INTO t2 FORMAT CSV", {queryOptions: {database: dbName}}, function (err, result) {
+			assert (!err, err);
+
+			ch.query ("SELECT * FROM t", {syncParser: true, queryOptions: {database: dbName}}, function (err, result) {
+
+				assert.equal (result.data[0][0], 8);
+				assert.equal (result.data[1][0], 73);
+				assert.equal (result.data[2][0], 42);
+
+				done ();
+
+			});
+		});
+		stream.write("0,0,\\N\n1,1,1")
+		stream.end ();
+	});
+
 	it ("creates a table 3", function (done) {
 		var ch = new ClickHouse ({host: host, port: port, queryOptions: {database: dbName}});
 		ch.query ("CREATE TABLE t3 (a UInt8, b Float32, x Nullable(String), z DateTime) ENGINE = Memory", function (err, result) {

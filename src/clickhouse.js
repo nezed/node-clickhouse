@@ -190,6 +190,12 @@ function httpRequest (reqParams, reqData, cb) {
 
 	stream.req = req;
 
+	// const write = req.write
+	// req.write = function() {
+	// 	process.stderr.write(arguments[0])
+	// 	return write.apply(req, arguments)
+	// }
+
 	if (reqData.query)
 		req.write (reqData.query);
 
@@ -296,12 +302,12 @@ ClickHouse.prototype.query = function (chQuery, options, cb) {
 
 			reqData.finalized = false;
 
+			formatEnding = '\n'; // clickhouse don't like data immediately after format name
 			if (!chQuery.match (/FORMAT/i)) {
 				// simplest format to use, only need to escape \t, \\ and \n
 				options.format = options.format || 'TabSeparated';
-				formatEnding = ' '; // clickhouse don't like data immediately after format name
 			} else {
-
+				options.omitFormat = true;
 			}
 		}
 	} else {
@@ -315,12 +321,13 @@ ClickHouse.prototype.query = function (chQuery, options, cb) {
 		queryObject.query = chQuery + ((options.omitFormat) ? '' : ' FORMAT ' + options.format + formatEnding);
 		reqParams.method = 'GET';
 	} else {
-		reqData.query = chQuery + (options.omitFormat ? '' : ' FORMAT ' + options.format + formatEnding);
+		// Trimmed query still may require `formatEnding` when FORMAT clause specified in query
+		reqData.query = chQuery + (options.omitFormat ? '' : ' FORMAT ' + options.format) + formatEnding;
 		reqParams.method = 'POST';
 	}
 
 	reqParams.query = queryObject;
-
+console.log({reqParams, reqData, options, formatEnding})
 	var stream = httpRequest (reqParams, reqData, cb);
 
 	return stream;
